@@ -18,6 +18,7 @@ def search_place(query, size=5):
 
     못 찾으면 빈 목록. 키·설정·연결 문제면 '⛔'로 시작하는 RuntimeError.
     """
+    size = max(1, min(size, 15))  # 카카오 size 는 1~15 (넘으면 400 에러)
     load_dotenv(override=True)
     rest_key = os.getenv("KAKAO_REST_API_KEY")
     if not rest_key:
@@ -50,6 +51,7 @@ def search_place(query, size=5):
         places.append({
             "이름": doc["place_name"],
             "주소": doc.get("road_address_name") or doc.get("address_name", ""),
+            "지번주소": doc.get("address_name", ""),
             "위도": 위도,
             "경도": 경도,
         })

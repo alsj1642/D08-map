@@ -55,6 +55,8 @@ def address_to_coord(address):
 
 def coord_to_address(위도, 경도):
     """(위도, 경도) → 도로명 주소. 도로명이 없으면 지번 주소. 못 찾으면 None."""
+    if not (33 <= 위도 <= 39 and 124 <= 경도 <= 132):
+        return None  # 한국 밖·뒤바뀐 좌표는 보내지 않음
     # 보낼 때는 x = 경도, y = 위도
     docs = _kakao_get(API["coord2address"], {"x": 경도, "y": 위도}).get("documents", [])
     if not docs:
@@ -62,7 +64,8 @@ def coord_to_address(위도, 경도):
     road = docs[0].get("road_address")  # 비어 있을 수 있음(null)
     if road:
         return road["address_name"]
-    return docs[0]["address"]["address_name"]
+    jibun = docs[0].get("address")  # 이것도 비어 있을 수 있음
+    return jibun["address_name"] if jibun else None
 
 
 if __name__ == "__main__":

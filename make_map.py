@@ -4,12 +4,14 @@
 """
 import json
 import os
+from pathlib import Path
 
 from dotenv import load_dotenv
 
 from place import search_place
 
 MAX_MARKERS = 200  # 너무 많으면 지도가 느려짐
+MAP_FILE = Path(__file__).parent / "map.html"  # 어느 폴더에서 실행해도 D08-map 안에 만들기
 
 HTML_TEMPLATE = """<!doctype html>
 <html lang="ko">
@@ -59,7 +61,13 @@ kakao.maps.load(function () {
     });
   });
 
-  if (MARKERS.length > 0) map.setBounds(bounds);  // 마커가 다 화면에 들어오게
+  // 마커가 다 화면에 들어오게 (1개면 setBounds 가 너무 확대해서 가운데로만)
+  if (MARKERS.length === 1) {
+    map.setCenter(new kakao.maps.LatLng(MARKERS[0]["위도"], MARKERS[0]["경도"]));
+    map.setLevel(3);
+  } else if (MARKERS.length > 1) {
+    map.setBounds(bounds);
+  }
 });
 </script>
 </body>
@@ -76,8 +84,8 @@ def kakao_map(js_key, markers):
         {"이름": m["이름"], "주소": m["주소"], "위도": m["위도"], "경도": m["경도"]}
         for m in markers[:MAX_MARKERS]
     ]
-    # </script> 같은 글자가 이름에 있어도 스크립트가 끊기지 않게
-    data_js = json.dumps(data, ensure_ascii=False).replace("</", "<\\/")
+    # </script>, <!-- 같은 글자가 이름에 있어도 스크립트가 끊기지 않게
+    data_js = json.dumps(data, ensure_ascii=False).replace("<", "\\u003c")
     return HTML_TEMPLATE.replace("__JS_KEY__", js_key).replace("__MARKERS__", data_js)
 
 
@@ -98,7 +106,7 @@ if __name__ == "__main__":
             if not places:
                 print(f"'{query}'을(를) 찾지 못했어요")
             else:
-                with open("map.html", "w", encoding="utf-8") as f:
+                with open(MAP_FILE, "w", encoding="utf-8") as f:
                     f.write(kakao_map(js_key, places))
                 for i, p in enumerate(places, 1):
                     print(f"{i}. {p['이름']}, {p['주소']}, ({p['위도']}, {p['경도']})")
